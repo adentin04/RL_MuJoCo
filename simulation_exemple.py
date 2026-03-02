@@ -1,4 +1,3 @@
-```python
 
 import acme
 import haiku as hk
@@ -13,17 +12,13 @@ from acme.jax import utils
 from dm_control import suite
 
 
-# JAX by default uses float32.
-# MuJoCo + Reverb here use float64 specs, so we enable x64 for dtype consistency.
 jax.config.update("jax_enable_x64", True)
 
 
-# 1) Create MuJoCo environment
 def make_environment():
     return suite.load(domain_name="pendulum", task_name="swingup")
 
 
-# 2) Build D4PG networks (policy + critic)
 def make_networks(
     spec: specs.EnvironmentSpec,
     policy_layer_sizes=(300, 200),
@@ -36,7 +31,6 @@ def make_networks(
     num_dimensions = int(np.prod(action_spec.shape, dtype=int))
     critic_atoms = jnp.linspace(vmin, vmax, num_atoms)
 
-    # Actor network: observation -> action
     def actor_fn(obs):
         network = hk.Sequential([
             utils.batch_concat,
@@ -46,7 +40,6 @@ def make_networks(
         ])
         return network(obs)
 
-    # Critic network: (observation, action) -> value distribution
     def critic_fn(obs, action):
         network = hk.Sequential([
             utils.batch_concat,
@@ -58,7 +51,6 @@ def make_networks(
     policy = hk.without_apply_rng(hk.transform(actor_fn))
     critic = hk.without_apply_rng(hk.transform(critic_fn))
 
-    # Dummy batch to initialize parameters
     dummy_action = utils.add_batch_dim(utils.zeros_like(spec.actions))
     dummy_obs = utils.add_batch_dim(utils.zeros_like(spec.observations))
 
@@ -77,7 +69,6 @@ def make_networks(
 environment = make_environment()
 environment_spec = specs.make_environment_spec(environment)
 
-# Quick debug prints for environment specs
 print("=== Environment spec ===")
 print("Observation spec:", environment_spec.observations)
 print("Action spec:", environment_spec.actions)
@@ -91,8 +82,6 @@ if hasattr(environment_spec.actions, "minimum") and hasattr(environment_spec.act
     print("Action maximum:", action_max)
     print("Action span:", action_max - action_min)
 
-
-# 3) Create D4PG networks + config
 networks = make_networks(environment_spec)
 
 config = d4pg_builder.D4PGConfig(
@@ -102,8 +91,6 @@ config = d4pg_builder.D4PGConfig(
     samples_per_insert_tolerance_rate=float("inf"),
 )
 
-
-# 4) Build local D4PG agent (no distributed launchpad path)
 builder = d4pg_builder.D4PGBuilder(config)
 policy_network = d4pg_builder.get_default_behavior_policy(networks, config)
 
@@ -119,33 +106,10 @@ agent = local_layout.LocalLayout(
     num_sgd_steps_per_step=config.num_sgd_steps_per_step,
 )
 
-
-# 5) Run training loop
 loop = acme.EnvironmentLoop(environment, agent)
 
 print("\n=== Short training (5 episodes) ===")
 print("Check in logs: episode_return and episode_length.")
-
-loop.run(num_episodes=5)
- 
-
- output :
- 
- === Environment spec ===
-Observation spec: OrderedDict([('orientation', Array(shape=(2,), dtype=dtype('float64'), name='orientation')), ('velocity', Array(shape=(1,), dtype=dtype('float64'), name='velocity'))])
-Action spec: BoundedArray(shape=(1,), dtype=dtype('float64'), name=None, minimum=[-1.], maximum=[1.])
-Reward spec: Array(shape=(), dtype=dtype('float64'), name='reward')
-Discount spec: BoundedArray(shape=(), dtype=dtype('float64'), name='discount', minimum=0.0, maximum=1.0)
-Action minimum: [-1.]
-Action maximum: [1.]
-Action span: [2.]
-[reverb/cc/platform/tfrecord_checkpointer.cc:162]  Initializing TFRecordCheckpointer in /tmp/tmp5hzxp4m9.
-[reverb/cc/platform/tfrecord_checkpointer.cc:565] Loading latest checkpoint from /tmp/tmp5hzxp4m9
-[reverb/cc/platform/default/server.cc:71] Started replay server on port 37847
-
-=== Short training (5 episodes) ===
-Check in logs: episode_return and episode_length.
-[reverb/cc/client.cc:165] Sampler and server are owned by the same process (24387) so Table priority_table is accessed directly without gRPC.
-[reverb/cc/client.cc:165] Sampler and server are owned by the same process (24387) so Table priority_table is accessed directly without gRPC.
-[reverb/cc/client.cc:165] Sampler and server are owned by the same process (24387) so Table priority_table is accessed directly without gRPC.
-[reverb/cc/client.cc:165] Sampler and server are owned by the same process (24387) so Table priority_table is accessed directly without gRPC.
+for episode in range(5):
+    metrics = loop.run_episode()
+    print(f"Episode {episode + 1} return:", metrics.get("episode_return"))

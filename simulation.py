@@ -8,6 +8,13 @@ from dm_env import specs
 
 
 class SimpleTask:
+    def _update_target_marker(self, physics):
+        try:
+            physics.named.model.body_pos['target_marker'] = self.target.astype(np.float64)
+            physics.forward()
+        except Exception:
+            pass
+
     def initialize_episode(self, physics):
         # sample a target position on the table in front of the robot
         # expressed in world coordinates
@@ -24,6 +31,7 @@ class SimpleTask:
         self.last_action = None
         self.prev_ee = None
         logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+        self._update_target_marker(physics)
 
     def before_step(self, action, physics):
         # store last action and apply control
@@ -111,7 +119,7 @@ class SimpleTask:
 
 def main():
     physics = mujoco.Physics.from_xml_path(
-        '/home/hiwi/Desktop/Mujoco/mujoco_menagerie/universal_robots_ur5e/ur5e.xml')
+        '/home/hiwi/Desktop/Mujoco/RL_MuJoCo/universal_robots_ur5e/ur5e.xml')
     task = SimpleTask()
     env = Environment(physics, task)
 
