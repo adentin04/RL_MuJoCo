@@ -6,6 +6,20 @@ import time  # Pour les délais entre les frames (ralentir l'animation)
 import jax  # On importe jax pour les calculs différentiables et les opérations sur GPU/TPU
 import jax.numpy as jnp # On importe jax.numpy pour les opérations sur les tableaux, similaire à numpy mais optimisé pour jax
 
+
+def print_jax_runtime_info():
+    backend = jax.default_backend()
+    devices = jax.devices()
+    print("\n" + "="*60)
+    print("[JAX RUNTIME]")
+    print(f"  Backend actif : {backend}")
+    print(f"  Devices       : {devices}")
+    if backend != 'gpu':
+        print("  ⚠️  GPU non utilisé : l'entraînement tournera sur CPU.")
+    else:
+        print("  ✅ GPU CUDA détecté : les opérations JAX sont envoyées au GPU.")
+    print("="*60)
+
 # =============================================================================
 # STRATÉGIE UTILISÉE : REINFORCE (Monte-Carlo Policy Gradient)
 # -----------------------------------------------------------------------------
@@ -34,6 +48,13 @@ def policy_network(params, observation):
     # POLITIQUE : transformation linéaire observation → scores d'action
     logits = jnp.dot(observation, params['w']) + params['b'] # calcule des logits en multipliant l'observation par les poids et en ajoutant le biais
     return logits # On retourne les logits, on appliquera softmax plus tard pour obtenir les probabilités d'action
+
+
+@jax.jit
+def sample_action_core(rng, params, observation):
+    logits = policy_network(params, observation)
+    action = jax.random.categorical(rng, logits)
+    return action, logits
 
 # =============================================================================
 # CRÉATION DE L'AGENT
@@ -66,9 +87,9 @@ def init_params(rng, input_dim=4, output_dim=2): # On initialise les paramètres
 # ce qui permet l'exploration. Dans CartPole, action ∈ {0 (gauche), 1 (droite)}.
 # =============================================================================
 def sample_action(rng, params, observation, verbose=False): # On définit une fonction pour échantillonner une action à partir de la politique
-    logits = policy_network(params, observation) # On calcule les logits à partir de l'observation et des paramètres
+    observation = jnp.asarray(observation, dtype=jnp.float32)
     # ACTION : tirage stochastique — la politique est probabiliste, pas déterministe
-    action = jax.random.categorical(rng, logits) # On échantillonne une action à partir de la distribution catégorielle définie par les logits
+    action, logits = sample_action_core(rng, params, observation)
     if verbose:
         probs = jax.nn.softmax(logits)  # convertir logits → probabilités lisibles
         print(f"    [POLITIQUE] Logits bruts        : gauche={float(logits[0]):.3f}, droite={float(logits[1]):.3f}")
@@ -141,36 +162,37 @@ def run_episode(env, params, rng, verbose=False, slow=False): #On définit une f
 # qui ont mené à des retours élevés (apprentissage par récompense différée).
 # =============================================================================
 def compute_loss(params, trajectories): # On définit une fonction pour calculer la perte à partir des paramètres et des trajectoires
-    total_loss = 0.0 # On initialise la perte totale à zéro
-    #Calculer les retours (discounted returns)
-    returns = [] # Liste pour stocker les retours
-    G = 0 # Variable pour calculer le retour cumulé
-    gamma = 0.99 # Facteur d'actualisation 
-    # Parcourir à l'envers pour calculer les retours
-    for _,_, reward in reversed(trajectories): # On parcourt les trajectoires à l'envers pour calculer les retours
-        G = reward + gamma * G  # On met à jour le retour cumulé en ajoutant la récompense actuelle et en actualisant le retour précédent avec le facteur gamma
-        returns.insert(0, G) # On insère le retour calculé au début de la liste des retours
-    # Pour chaque étape 
-    for (obs, action, _), G in zip(trajectories, returns):
-        # Calculer log prob de l'action choisie
-        logits = policy_network(params, obs) # On calcule les logits à partir de l'observation et des paramètres
-        log_probs = jax.nn.log_softmax(logits) # On applique la fonction log_softmax pour obtenir les log-probabilités d'action
-        log_prob_action = log_probs[action] # On extrait la log-probabilité de l'action choisie
+    observations, actions, rewards = trajectories
+    gamma = 0.99
 
-        #loss: -log_prob* return (négatif car on fait de la descente de gradient)
-        total_loss += -log_prob_action * G  # ✅ Corrigé
+    def discounted_scan(carry, reward):
+        new_carry = reward + gamma * carry
+        return new_carry, new_carry
 
-    return total_loss / len(trajectories) # On retourne la perte moyenne en divisant la perte totale par le nombre de trajectoires
+    _, reversed_returns = jax.lax.scan(discounted_scan, 0.0, rewards[::-1])
+    returns = reversed_returns[::-1]
+
+    logits = observations @ params['w'] + params['b']
+    log_probs = jax.nn.log_softmax(logits, axis=1)
+    chosen_log_probs = log_probs[jnp.arange(actions.shape[0]), actions]
+    return -jnp.mean(chosen_log_probs * returns)
+
+
+def trajectories_to_arrays(trajectories):
+    observations = jnp.asarray([obs for obs, _, _ in trajectories], dtype=jnp.float32)
+    actions = jnp.asarray([int(action) for _, action, _ in trajectories], dtype=jnp.int32)
+    rewards = jnp.asarray([reward for _, _, reward in trajectories], dtype=jnp.float32)
+    return observations, actions, rewards
 
 # Jax: gradient et mise à jour
 #jax.grad transforme compute_loss en fonction qui retourne les gradients !
-grad_loss = jax.grad(compute_loss) # On utilise jax.grad pour obtenir une fonction qui calcule les gradients de la perte par rapport aux paramètres
+grad_loss = jax.jit(jax.grad(compute_loss)) # On utilise jax.grad pour obtenir une fonction qui calcule les gradients de la perte par rapport aux paramètres
 
 def update_params(params, trajectories, lr=0.01, verbose=False):
     grads = grad_loss(params, trajectories)
     new_params = {
-        'w': params['w'] - lr * grads['w'],
-        'b': params['b'] - lr * grads['b']
+        'w': params['w'] - jnp.float32(lr) * grads['w'],
+        'b': params['b'] - jnp.float32(lr) * grads['b']
     }
     if verbose:
         grad_norm_w = float(jnp.linalg.norm(grads['w']))
@@ -184,6 +206,7 @@ def update_params(params, trajectories, lr=0.01, verbose=False):
 # INITIALISATION
 # =============================================================================
 rng = jax.random.PRNGKey(42) # On initialise une clé de générateur de nombres aléatoires pour jax
+print_jax_runtime_info()
 
 # CRÉATION DE L'ENVIRONNEMENT : CartPole-v1
 # L'environnement simule une perche posée sur un chariot mobile.
@@ -227,7 +250,8 @@ for episode in range(n_episodes):
     n_steps = len(trajectories)
 
     # 2. Mettre à jour les paramètres
-    params = update_params(params, trajectories, lr=0.01, verbose=verbose)
+    trajectory_arrays = trajectories_to_arrays(trajectories)
+    params = update_params(params, trajectory_arrays, lr=0.01, verbose=verbose)
 
     # Enregistrer la récompense pour le graphique
     all_rewards.append(total_reward)
