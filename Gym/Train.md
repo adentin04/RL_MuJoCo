@@ -915,16 +915,11 @@ J'ai cree aussi une video pour voir comment le cartPole se comporte:
 Mon idee est aussi de analiser le contenu de la video pour voir si les logs dans le terminal , la video et la courbe d'aprentissage soient coherent . 
 Je veux aussi sauvegarder plusieurs log et courbe d'aprentissage dans un dossier pour les analiser et voir la difference . 
 
-Output : 
+log avec la video : Output : 
 
-=======
-![[Pasted image 20260304144222.png]]
->>>>>>> aa9505c (ajout de obsidian)
 
 ```bash
-ujoco_env) (base) hiwi@hiwi-ESPRIMO-P958:~/Desktop/Mujoco/RL_MuJoCo/Gym$ python JaxCode.py
 
-============================================================
 [JAX RUNTIME]
   Backend actif : gpu
   Devices       : [CudaDevice(id=0)]
@@ -942,80 +937,7 @@ ujoco_env) (base) hiwi@hiwi-ESPRIMO-P958:~/Desktop/Mujoco/RL_MuJoCo/Gym$ python 
 
 ============================================================
 [DÉBUT ENTRAÎNEMENT]
-  Nombre d'épisodes : 500
-  Algorithme        : REINFORCE (Monte-Carlo Policy Gradient)
-  Récompense        : +1 par pas de temps où la perche est debout
-  Objectif          : atteindre 500 pas (score max de CartPole-v1)
-============================================================
-
-============================================================
-[ÉPISODE 0] — logs détaillés activés
-============================================================
-Traceback (most recent call last):
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/envs/classic_control/cartpole.py", line 258, in render
-    import pygame
-ModuleNotFoundError: No module named 'pygame'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/hiwi/Desktop/Mujoco/RL_MuJoCo/Gym/JaxCode.py", line 248, in <module>
-    trajectories = run_episode(env, params, episode_rng, verbose=verbose, slow=slow_render)
-  File "/home/hiwi/Desktop/Mujoco/RL_MuJoCo/Gym/JaxCode.py", line 107, in run_episode
-    obs, _ = env.reset() # On réinitialise l'environnement et on obtient l'observation initiale
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/wrappers/common.py", line 146, in reset
-    return super().reset(seed=seed, options=options)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/core.py", line 333, in reset
-    return self.env.reset(seed=seed, options=options)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/wrappers/common.py", line 400, in reset
-    return super().reset(seed=seed, options=options)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/core.py", line 333, in reset
-    return self.env.reset(seed=seed, options=options)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/wrappers/common.py", line 293, in reset
-    return env_reset_passive_checker(self.env, seed=seed, options=options)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/utils/passive_env_checker.py", line 185, in env_reset_passive_checker
-    result = env.reset(**kwargs)
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/envs/classic_control/cartpole.py", line 244, in reset
-    self.render()
-  File "/home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages/gymnasium/envs/classic_control/cartpole.py", line 261, in render
-    raise DependencyNotInstalled(
-gymnasium.error.DependencyNotInstalled: pygame is not installed, run `pip install "gymnasium[classic-control]"`
-(mujoco_env) (base) hiwi@hiwi-ESPRIMO-P958:~/Desktop/Mujoco/RL_MuJoCo/Gym$ pip install gymnasium[classic-control] m pygame
-ERROR: Could not find a version that satisfies the requirement m (from versions: none)
-ERROR: No matching distribution found for m
-(mujoco_env) (base) hiwi@hiwi-ESPRIMO-P958:~/Desktop/Mujoco/RL_MuJoCo/Gym$ pip install gymnasium[classic-control] pygame
-Collecting pygame
-  Downloading pygame-2.6.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (12 kB)
-Requirement already satisfied: gymnasium[classic-control] in /home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages (1.2.3)
-Requirement already satisfied: numpy>=1.21.0 in /home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages (from gymnasium[classic-control]) (1.26.4)
-Requirement already satisfied: cloudpickle>=1.2.0 in /home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages (from gymnasium[classic-control]) (3.1.2)
-Requirement already satisfied: typing-extensions>=4.3.0 in /home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages (from gymnasium[classic-control]) (4.15.0)
-Requirement already satisfied: farama-notifications>=0.0.1 in /home/hiwi/miniconda3/envs/mujoco_env/lib/python3.10/site-packages (from gymnasium[classic-control]) (0.0.4)
-Downloading pygame-2.6.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (14.0 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 14.0/14.0 MB 18.9 MB/s  0:00:00
-Installing collected packages: pygame
-Successfully installed pygame-2.6.1
-(mujoco_env) (base) hiwi@hiwi-ESPRIMO-P958:~/Desktop/Mujoco/RL_MuJoCo/Gym$ python JaxCode.py
-
-============================================================
-[JAX RUNTIME]
-  Backend actif : gpu
-  Devices       : [CudaDevice(id=0)]
-  ✅ GPU CUDA détecté : les opérations JAX sont envoyées au GPU.
-============================================================
-
-============================================================
-[AGENT] Naissance de l'agent !
-  Entrées  : 4 valeurs d'état (position, vitesse, angle, vitesse_angulaire)
-  Sorties  : 2 actions possibles (0=gauche, 1=droite)
-  Poids W  : matrice 4x2, initialisés aléatoirement
-  Biais b  : vecteur de 2, initialisés aléatoirement
-  → L'agent ne sait RIEN pour l'instant, il agit au hasard.
-============================================================
-
-============================================================
-[DÉBUT ENTRAÎNEMENT]
-  Nombre d'épisodes : 500
+  Nombre d\'épisodes : 500
   Algorithme        : REINFORCE (Monte-Carlo Policy Gradient)
   Récompense        : +1 par pas de temps où la perche est debout
   Objectif          : atteindre 500 pas (score max de CartPole-v1)
@@ -1066,7 +988,7 @@ Successfully installed pygame-2.6.1
 [MISE À JOUR POLITIQUE]
   Norme du gradient W : 0.35573
   Norme du gradient b : 1.64731
-  Taux d'apprentissage : 0.01
+  Taux d\'apprentissage : 0.01
   → Les poids sont ajustés pour favoriser les actions rentables.
 
 » Épisode   0 | Pas :   12 | Récompense totale :   12.0 
@@ -1118,7 +1040,7 @@ Successfully installed pygame-2.6.1
 [MISE À JOUR POLITIQUE]
   Norme du gradient W : 0.28801
   Norme du gradient b : 1.20179
-  Taux d'apprentissage : 0.01
+  Taux d\'apprentissage : 0.01
   → Les poids sont ajustés pour favoriser les actions rentables.
 
 » Épisode 100 | Pas :   16 | Récompense totale :   16.0 
@@ -1182,7 +1104,7 @@ Successfully installed pygame-2.6.1
 [MISE À JOUR POLITIQUE]
   Norme du gradient W : 0.68622
   Norme du gradient b : 0.07940
-  Taux d'apprentissage : 0.01
+  Taux d\'apprentissage : 0.01
   → Les poids sont ajustés pour favoriser les actions rentables.
 
 » Épisode 499 | Pas :  104 | Récompense totale :  104.0 
@@ -1191,4 +1113,210 @@ Successfully installed pygame-2.6.1
 [FIN ENTRAÎNEMENT]
   Dernier score : 104.0 / 500
 ============================================================
+```
+
+Log avec une courbe d'apprentissage : 
+
+![[Pasted image 20260304144222.png]]
+
+```bash
+
+============================================================
+[JAX RUNTIME]
+  Backend actif : gpu
+  Devices       : [CudaDevice(id=0)]
+  ✅ GPU CUDA détecté : les opérations JAX sont envoyées au GPU.
+============================================================
+
+============================================================
+[AGENT] Naissance de l'agent !
+  Entrées  : 4 valeurs d'état (position, vitesse, angle, vitesse_angulaire)
+  Sorties  : 2 actions possibles (0=gauche, 1=droite)
+  Poids W  : matrice 4x2, initialisés aléatoirement
+  Biais b  : vecteur de 2, initialisés aléatoirement
+  → L'agent ne sait RIEN pour l'instant, il agit au hasard.
+============================================================
+
+============================================================
+[DÉBUT ENTRAÎNEMENT]
+  Nombre d\'épisodes : 500
+  Algorithme        : REINFORCE (Monte-Carlo Policy Gradient)
+  Récompense        : +1 par pas de temps où la perche est debout
+  Objectif          : atteindre 500 pas (score max de CartPole-v1)
+============================================================
+
+============================================================
+[ÉPISODE 0] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=0.022, vit_chariot=-0.021, angle_perche=0.019 rad, vit_angulaire=-0.040
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=0.022, vit=-0.021, angle=0.019 rad (1.1°), vit_ang=-0.040
+    [POLITIQUE] Logits bruts        : gauche=0.056, droite=0.082
+    [POLITIQUE] Probabilités        : gauche=49.4%, droite=50.6%
+    [ACTION]    Action choisie      : DROITE (1)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=0.021, vit=0.174, angle=0.018 rad (1.0°), vit_ang=-0.327
+    [POLITIQUE] Logits bruts        : gauche=0.065, droite=0.115
+    [POLITIQUE] Probabilités        : gauche=48.8%, droite=51.2%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=0.025, vit=-0.022, angle=0.012 rad (0.7°), vit_ang=-0.029
+    [POLITIQUE] Logits bruts        : gauche=0.057, droite=0.080
+    [POLITIQUE] Probabilités        : gauche=49.4%, droite=50.6%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=0.024, vit=-0.217, angle=0.011 rad (0.6°), vit_ang=0.268
+    [POLITIQUE] Logits bruts        : gauche=0.049, droite=0.046
+    [POLITIQUE] Probabilités        : gauche=50.1%, droite=49.9%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 14 pas.
+  Récompense totale : 14.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.50236
+  Norme du gradient b : 1.94064
+  Taux d\'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode   0 | Pas :   14 | Récompense totale :   14.0 
+
+» Épisode  50 | Pas :   61 | Récompense totale :   61.0 
+
+============================================================
+[ÉPISODE 100] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=-0.043, vit_chariot=-0.041, angle_perche=0.043 rad, vit_angulaire=-0.025
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=-0.043, vit=-0.041, angle=0.043 rad (2.4°), vit_ang=-0.025
+    [POLITIQUE] Logits bruts        : gauche=0.141, droite=-0.003
+    [POLITIQUE] Probabilités        : gauche=53.6%, droite=46.4%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=-0.044, vit=-0.237, angle=0.042 rad (2.4°), vit_ang=0.280
+    [POLITIQUE] Logits bruts        : gauche=0.059, droite=0.036
+    [POLITIQUE] Probabilités        : gauche=50.6%, droite=49.4%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=-0.049, vit=-0.433, angle=0.048 rad (2.7°), vit_ang=0.586
+    [POLITIQUE] Logits bruts        : gauche=-0.023, droite=0.076
+    [POLITIQUE] Probabilités        : gauche=47.5%, droite=52.5%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=-0.058, vit=-0.628, angle=0.060 rad (3.4°), vit_ang=0.893
+    [POLITIQUE] Logits bruts        : gauche=-0.104, droite=0.117
+    [POLITIQUE] Probabilités        : gauche=44.5%, droite=55.5%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 15 pas.
+  Récompense totale : 15.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.33538
+  Norme du gradient b : 1.11103
+  Taux d\'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode 100 | Pas :   15 | Récompense totale :   15.0 
+
+» Épisode 150 | Pas :   31 | Récompense totale :   31.0 
+
+» Épisode 200 | Pas :   32 | Récompense totale :   32.0 
+
+» Épisode 250 | Pas :  177 | Récompense totale :  177.0 
+
+» Épisode 300 | Pas :   46 | Récompense totale :   46.0 
+
+» Épisode 350 | Pas :   77 | Récompense totale :   77.0 
+
+» Épisode 400 | Pas :   54 | Récompense totale :   54.0 
+
+» Épisode 450 | Pas :   58 | Récompense totale :   58.0 
+
+============================================================
+[ÉPISODE 499] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=-0.020, vit_chariot=0.005, angle_perche=-0.013 rad, vit_angulaire=-0.037
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=-0.020, vit=0.005, angle=-0.013 rad (-0.7°), vit_ang=-0.037
+    [POLITIQUE] Logits bruts        : gauche=0.213, droite=-0.070
+    [POLITIQUE] Probabilités        : gauche=57.0%, droite=43.0%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=-0.020, vit=-0.190, angle=-0.014 rad (-0.8°), vit_ang=0.252
+    [POLITIQUE] Logits bruts        : gauche=-0.040, droite=0.140
+    [POLITIQUE] Probabilités        : gauche=45.5%, droite=54.5%
+    [ACTION]    Action choisie      : DROITE (1)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=-0.023, vit=0.006, angle=-0.008 rad (-0.5°), vit_ang=-0.045
+    [POLITIQUE] Logits bruts        : gauche=0.218, droite=-0.075
+    [POLITIQUE] Probabilités        : gauche=57.3%, droite=42.7%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=-0.023, vit=-0.189, angle=-0.009 rad (-0.5°), vit_ang=0.245
+    [POLITIQUE] Logits bruts        : gauche=-0.036, droite=0.137
+    [POLITIQUE] Probabilités        : gauche=45.7%, droite=54.3%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 38 pas.
+  Récompense totale : 38.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.57875
+  Norme du gradient b : 1.48004
+  Taux d\'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode 499 | Pas :   38 | Récompense totale :   38.0 
+
+============================================================
+[FIN ENTRAÎNEMENT]
+  Dernier score : 38.0 / 500
+============================================================
+
+[GRAPHIQUE] Affichage de la courbe d\'apprentissage...
+[GRAPHIQUE] Courbe sauvegardée dans 'learning_curve.png' (fenêtre ouverte en arrière-plan)
+[TERMINE] Ferme la fenetre du graphique pour quitter.
 ```
