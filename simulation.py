@@ -119,7 +119,7 @@ class SimpleTask:
 
 def main():
     physics = mujoco.Physics.from_xml_path(
-        '/home/hiwi/Desktop/Mujoco/RL_MuJoCo/universal_robots_ur5e/ur5e.xml')
+        'C:\\Users\\desir\\Documents\\Stage\\universal_robots_ur5e\\ur5e.xml')
     task = SimpleTask()
     env = Environment(physics, task)
 
