@@ -351,6 +351,7 @@ reward: 1.0
 terminated: True
 Moyenne: 1.0
 ```
+<<<<<<< HEAD
 
 Il y a eu  des changements de code , on a remarque que JAX n'utilisez pas la GPU donc on a change , j'ai installe cuda , les drivers de nvidia et j'ai modifie le code, maintenant on a aussi un rendu graphique pour voir le cartpole:
 ``` python
@@ -916,3 +917,6 @@ Je veux aussi sauvegarder plusieurs log et courbe d'aprentissage dans un dossier
 
 Output : 
 
+=======
+![[Pasted image 20260304144222.png]]
+>>>>>>> aa9505c (ajout de obsidian)

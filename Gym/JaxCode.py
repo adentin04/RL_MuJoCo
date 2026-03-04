@@ -2,6 +2,8 @@ import gymnasium as gym
 import matplotlib.pyplot as plt  # Pour tracer la courbe d'apprentissage
 import matplotlib.patches as mpatches  # Pour les légendes du graphique
 import time  # Pour les délais entre les frames (ralentir l'animation)
+import os
+from datetime import datetime
 
 import jax  # On importe jax pour les calculs différentiables et les opérations sur GPU/TPU
 import jax.numpy as jnp # On importe jax.numpy pour les opérations sur les tableaux, similaire à numpy mais optimisé pour jax
@@ -294,9 +296,13 @@ ax.set_ylim(0, 520)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('learning_curve.png', dpi=120)  # Sauvegarde automatique
+output_dir = 'learning_curves'
+os.makedirs(output_dir, exist_ok=True)
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+curve_path = os.path.join(output_dir, f'learning_curve_{timestamp}.png')
+plt.savefig(curve_path, dpi=120)  # Sauvegarde automatique (sans écraser les anciens runs)
 plt.show(block=False)  # Affiche sans bloquer la suite du programme
-print("[GRAPHIQUE] Courbe sauvegard\u00e9e dans 'learning_curve.png' (fen\u00eatre ouverte en arri\u00e8re-plan)")
+print(f"[GRAPHIQUE] Courbe sauvegardée dans '{curve_path}' (fenêtre ouverte en arrière-plan)")
 
 plt.show()
 print("[TERMINE] Ferme la fenetre du graphique pour quitter.")
