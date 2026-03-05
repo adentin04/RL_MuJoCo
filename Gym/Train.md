@@ -1320,3 +1320,201 @@ Log avec une courbe d'apprentissage :
 [GRAPHIQUE] Courbe sauvegardée dans 'learning_curve.png' (fenêtre ouverte en arrière-plan)
 [TERMINE] Ferme la fenetre du graphique pour quitter.
 ```
+
+log apres avoir ajoue la baseline  :
+```bash
+
+============================================================
+[JAX RUNTIME]
+  Backend actif : gpu
+  Devices       : [CudaDevice(id=0)]
+  ✅ GPU CUDA détecté : les opérations JAX sont envoyées au GPU.
+============================================================
+
+============================================================
+[AGENT] Naissance de l'agent !
+  Entrées  : 4 valeurs d'état (position, vitesse, angle, vitesse_angulaire)
+  Sorties  : 2 actions possibles (0=gauche, 1=droite)
+  Poids W  : matrice 4x2, initialisés aléatoirement
+  Biais b  : vecteur de 2, initialisés aléatoirement
+  → L'agent ne sait RIEN pour l'instant, il agit au hasard.
+============================================================
+
+============================================================
+[DÉBUT ENTRAÎNEMENT]
+  Nombre d'épisodes : 500
+  Algorithme        : REINFORCE (Monte-Carlo Policy Gradient)
+  Récompense        : +1 par pas de temps où la perche est debout
+  Objectif          : atteindre 500 pas (score max de CartPole-v1)
+============================================================
+
+============================================================
+[ÉPISODE 0] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=-0.018, vit_chariot=-0.001, angle_perche=0.017 rad, vit_angulaire=0.022
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=-0.018, vit=-0.001, angle=0.017 rad (1.0°), vit_ang=0.022
+    [POLITIQUE] Logits bruts        : gauche=0.062, droite=0.080
+    [POLITIQUE] Probabilités        : gauche=49.6%, droite=50.4%
+    [ACTION]    Action choisie      : DROITE (1)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=-0.018, vit=0.194, angle=0.017 rad (1.0°), vit_ang=-0.266
+    [POLITIQUE] Logits bruts        : gauche=0.071, droite=0.113
+    [POLITIQUE] Probabilités        : gauche=48.9%, droite=51.1%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=-0.014, vit=-0.001, angle=0.012 rad (0.7°), vit_ang=0.032
+    [POLITIQUE] Logits bruts        : gauche=0.063, droite=0.078
+    [POLITIQUE] Probabilités        : gauche=49.6%, droite=50.4%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=-0.015, vit=-0.197, angle=0.013 rad (0.7°), vit_ang=0.329
+    [POLITIQUE] Logits bruts        : gauche=0.054, droite=0.044
+    [POLITIQUE] Probabilités        : gauche=50.3%, droite=49.7%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 13 pas.
+  Récompense totale : 13.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.41018
+  Norme du gradient b : 1.77970
+  Taux d'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode   0 | Pas :   13 | Récompense totale :   13.0 
+
+» Épisode  50 | Pas :   71 | Récompense totale :   71.0 
+
+============================================================
+[ÉPISODE 100] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=-0.023, vit_chariot=-0.024, angle_perche=-0.004 rad, vit_angulaire=-0.040
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=-0.023, vit=-0.024, angle=-0.004 rad (-0.2°), vit_ang=-0.040
+    [POLITIQUE] Logits bruts        : gauche=0.137, droite=0.001
+    [POLITIQUE] Probabilités        : gauche=53.4%, droite=46.6%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=-0.024, vit=-0.219, angle=-0.004 rad (-0.3°), vit_ang=0.251
+    [POLITIQUE] Logits bruts        : gauche=0.042, droite=0.053
+    [POLITIQUE] Probabilités        : gauche=49.7%, droite=50.3%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=-0.028, vit=-0.414, angle=0.001 rad (0.0°), vit_ang=0.543
+    [POLITIQUE] Logits bruts        : gauche=-0.052, droite=0.106
+    [POLITIQUE] Probabilités        : gauche=46.0%, droite=54.0%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=-0.037, vit=-0.609, angle=0.012 rad (0.7°), vit_ang=0.835
+    [POLITIQUE] Logits bruts        : gauche=-0.147, droite=0.160
+    [POLITIQUE] Probabilités        : gauche=42.4%, droite=57.6%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 25 pas.
+  Récompense totale : 25.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.81861
+  Norme du gradient b : 0.78297
+  Taux d'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode 100 | Pas :   25 | Récompense totale :   25.0 
+
+» Épisode 150 | Pas :   31 | Récompense totale :   31.0 
+
+» Épisode 200 | Pas :   38 | Récompense totale :   38.0 
+
+» Épisode 250 | Pas :   71 | Récompense totale :   71.0 
+
+» Épisode 300 | Pas :   91 | Récompense totale :   91.0 
+
+» Épisode 350 | Pas :   59 | Récompense totale :   59.0 
+
+» Épisode 400 | Pas :   66 | Récompense totale :   66.0 
+
+» Épisode 450 | Pas :   31 | Récompense totale :   31.0 
+
+============================================================
+[ÉPISODE 499] — logs détaillés activés
+============================================================
+
+[ENV] Environnement réinitialisé.
+  État initial → pos_chariot=-0.033, vit_chariot=-0.043, angle_perche=-0.027 rad, vit_angulaire=-0.037
+  (Les valeurs sont proches de 0 : perche presque verticale, chariot au centre)
+------------------------------------------------------------
+
+  [PAS 1]
+    [ÉTAT]      pos=-0.033, vit=-0.043, angle=-0.027 rad (-1.6°), vit_ang=-0.037
+    [POLITIQUE] Logits bruts        : gauche=0.240, droite=-0.107
+    [POLITIQUE] Probabilités        : gauche=58.6%, droite=41.4%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 2]
+    [ÉTAT]      pos=-0.034, vit=-0.237, angle=-0.028 rad (-1.6°), vit_ang=0.247
+    [POLITIQUE] Logits bruts        : gauche=-0.038, droite=0.129
+    [POLITIQUE] Probabilités        : gauche=45.8%, droite=54.2%
+    [ACTION]    Action choisie      : DROITE (1)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 3]
+    [ÉTAT]      pos=-0.039, vit=-0.042, angle=-0.023 rad (-1.3°), vit_ang=-0.055
+    [POLITIQUE] Logits bruts        : gauche=0.253, droite=-0.118
+    [POLITIQUE] Probabilités        : gauche=59.2%, droite=40.8%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+
+  [PAS 4]
+    [ÉTAT]      pos=-0.040, vit=-0.237, angle=-0.024 rad (-1.4°), vit_ang=0.231
+    [POLITIQUE] Logits bruts        : gauche=-0.026, droite=0.119
+    [POLITIQUE] Probabilités        : gauche=46.4%, droite=53.6%
+    [ACTION]    Action choisie      : GAUCHE (0)
+    [REWARD]    Récompense reçue    : +1.0  (perche encore debout ✓)
+    ... (logs masqués pour les pas suivants) ...
+
+[ENV] Épisode terminé après 52 pas.
+  Récompense totale : 52.0
+  (Score max possible dans CartPole-v1 : 500)
+
+[MISE À JOUR POLITIQUE]
+  Norme du gradient W : 0.62213
+  Norme du gradient b : 0.02951
+  Taux d'apprentissage : 0.01
+  → Les poids sont ajustés pour favoriser les actions rentables.
+
+» Épisode 499 | Pas :   52 | Récompense totale :   52.0 
+
+============================================================
+[FIN ENTRAÎNEMENT]
+  Dernier score : 52.0 / 500
+============================================================
