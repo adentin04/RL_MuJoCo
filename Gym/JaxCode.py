@@ -180,6 +180,49 @@ def compute_loss(params, trajectories): # On définit une fonction pour calculer
     return -jnp.mean(chosen_log_probs * returns)
 
 
+# =============================================================================
+# VARIANTE AVEC BASELINE — REINFORCE avec réduction de variance
+# -----------------------------------------------------------------------------
+# compute_loss_with_baseline() améliore REINFORCE en soustrayant une baseline
+# (la moyenne des retours de l'épisode) à chaque retour cumulé.
+# Avantage calculé : A = G - baseline
+# Cela réduit la variance du gradient sans introduire de biais,
+# car la baseline est indépendante de l'action choisie.
+# Résultat : apprentissage plus stable et plus rapide qu'un REINFORCE pur.
+# Note : cette version Python pur est moins optimisée que compute_loss (JAX).
+# =============================================================================
+def compute_loss_with_baseline(params, trajectories):
+    total_loss = 0.0
+    returns = []
+    G = 0
+    gamma = 0.99
+
+    # Calcul des retours cumulés actualisés en parcourant l'épisode à l'envers
+    # G_t = r_t + γ * G_{t+1}  (propagation des récompenses futures vers le passé)
+    for _, _, reward in reversed(trajectories):
+        G = reward + gamma * G
+        returns.insert(0, G)  # on insère en tête pour maintenir l'ordre chronologique
+
+    # Baseline = moyenne des retours de l'épisode
+    # Sert de référence : une action est "bonne" si son retour dépasse cette moyenne
+    baseline = sum(returns) / len(returns)
+
+    for (obs, action, _), G in zip(trajectories, returns):
+        # Calculer les logits et les log-probabilités via la politique
+        logits = policy_network(params, obs)
+        log_probs = jax.nn.log_softmax(logits)
+        log_prob_action = log_probs[action]  # log-prob de l'action effectivement choisie
+
+        # Avantage = écart entre le retour réel et la baseline
+        # Si advantage > 0 : l'action était meilleure que la moyenne → on la renforce
+        # Si advantage < 0 : l'action était pire que la moyenne → on la pénalise
+        advantage = G - baseline
+        total_loss += -log_prob_action * advantage  # gradient de politique pondéré
+
+    # Moyenne sur tous les pas de temps pour normaliser selon la longueur de l'épisode
+    return total_loss / len(trajectories)
+
+
 def trajectories_to_arrays(trajectories):
     observations = jnp.asarray([obs for obs, _, _ in trajectories], dtype=jnp.float32)
     actions = jnp.asarray([int(action) for _, action, _ in trajectories], dtype=jnp.int32)
