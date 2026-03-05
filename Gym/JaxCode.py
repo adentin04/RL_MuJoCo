@@ -269,7 +269,7 @@ VERBOSE_EPISODES = {0, 100, 499}       # épisodes avec logs détaillés pas-à-
 # Liste pour stocker les récompenses de chaque épisode → sert à tracer le graphique
 all_rewards = []
 
-n_episodes = 500
+n_episodes = 2000
 print("\n" + "="*60)
 print("[DÉBUT ENTRAÎNEMENT]")
 print(f"  Nombre d'épisodes : {n_episodes}")
