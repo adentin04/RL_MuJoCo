@@ -236,12 +236,12 @@ grad_loss = jax.jit(jax.grad(compute_loss)) # On utilise jax.grad pour obtenir u
 def update_params(params, trajectories, lr=0.01, verbose=False):
     grads = grad_loss(params, trajectories)
     new_params = {
-        'w': params['w'] - jnp.float32(lr) * grads['w'],
-        'b': params['b'] - jnp.float32(lr) * grads['b']
+        'w': params['w'] - jnp.float32(lr) * grads['w'], # On met à jour les poids en soustrayant le gradient multiplié par le taux d'apprentissage
+        'b': params['b'] - jnp.float32(lr) * grads['b']  # On met à jour les biais de la même manière
     }
     if verbose:
-        grad_norm_w = float(jnp.linalg.norm(grads['w']))
-        grad_norm_b = float(jnp.linalg.norm(grads['b']))
+        grad_norm_w = float(jnp.linalg.norm(grads['w'])) # On calcule la norme du gradient pour les poids pour avoir une idée de l'ampleur de la mise à jour
+        grad_norm_b = float(jnp.linalg.norm(grads['b'])) # On calcule la norme du gradient pour les biais pour avoir une idée de l'ampleur de la mise à jour
         print(f"\n[MISE À JOUR POLITIQUE]")
         print(f"  Norme du gradient W : {grad_norm_w:.5f}")
         print(f"  Norme du gradient b : {grad_norm_b:.5f}")
