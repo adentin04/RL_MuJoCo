@@ -1,0 +1,12 @@
+services:
+  rl-mujoco-acme:
+    build:
+      context: .
+      dockerfile: Dockerfile.acme
+    container_name: rl-mujoco-acme
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    stdin_open: true
+    tty: true
+    command: ["python", "-c", "import dm_env, jax, mujoco; from acme import core, types; from acme.agents.jax import sac; print('ACME_DOCKER_OK')"]

@@ -1,4 +1,4 @@
-"""UR5e Reach Environment avec agent JAX local (sans Acme)."""
+"""UR5e Reach Environment - version Acme-safe (sans imports Acme conflictuels)."""
 
 import dataclasses
 from typing import Optional, Dict, Any, Tuple
@@ -7,9 +7,13 @@ import dm_env
 import jax
 import jax.numpy as jnp
 import mujoco
-import mujoco.viewer
 import numpy as np
 from dm_env import specs
+
+try:
+    import mujoco.viewer as mj_viewer
+except Exception:
+    mj_viewer = None
 
 try:
     import matplotlib.pyplot as plt
@@ -77,18 +81,16 @@ class UR5eReachEnvDM(dm_env.Environment):
         # Pour le rendering
         self._render_mode = render_mode
         self._viewer = None
-        self._viewer_enabled = render_mode in {"human", "viewer"}
+        self._viewer_warning_printed = False
         
     def _initialize_state(self) -> UR5eState:
         """Crée l'état initial"""
-        ee_pos = self._get_end_effector_pos()
-        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.curriculum_targets[0])))
         return UR5eState(
             qpos=jnp.array(self.data.qpos[:6].copy()),
             qvel=jnp.array(self.data.qvel[:6].copy()),
             target=self.curriculum_targets[0],
             time=0.0,
-            last_distance=initial_distance,
+            last_distance=np.inf,
             curriculum_stage=0
         )
     
@@ -109,9 +111,6 @@ class UR5eReachEnvDM(dm_env.Environment):
                 self.data.mocap_pos[mocap_id] = self.curriculum_targets[0]
         
         mujoco.mj_forward(self.model, self.data)
-
-        ee_pos = self._get_end_effector_pos()
-        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.curriculum_targets[0])))
         
         # Mettre à jour l'état JAX
         self._state = UR5eState(
@@ -119,7 +118,7 @@ class UR5eReachEnvDM(dm_env.Environment):
             qvel=jnp.zeros(6),
             target=self.curriculum_targets[0],
             time=0.0,
-            last_distance=initial_distance,
+            last_distance=np.inf,
             curriculum_stage=0
         )
         
@@ -128,32 +127,12 @@ class UR5eReachEnvDM(dm_env.Environment):
     
     def step(self, action: np.ndarray) -> dm_env.TimeStep:
         """Step dm_env style"""
-        safe_action = np.asarray(action, dtype=np.float32)
-        safe_action = np.nan_to_num(safe_action, nan=0.0, posinf=1.0, neginf=-1.0)
-        safe_action = np.clip(safe_action, -1.0, 1.0)
-
-        ctrl = np.asarray(self.home_joints) + safe_action * self.action_scale
-        ctrl = np.nan_to_num(ctrl, nan=0.0, posinf=1.0, neginf=-1.0)
-
-        if self.model.nu >= 6 and getattr(self.model, "actuator_ctrllimited", None) is not None:
-            limited = np.asarray(self.model.actuator_ctrllimited[:6]).astype(bool)
-            if np.any(limited):
-                low = np.asarray(self.model.actuator_ctrlrange[:6, 0])
-                high = np.asarray(self.model.actuator_ctrlrange[:6, 1])
-                ctrl[limited] = np.clip(ctrl[limited], low[limited], high[limited])
-
-        self.data.ctrl[:6] = ctrl
+        # Appliquer l'action
+        self.data.ctrl[:6] = self.home_joints + action * self.action_scale
         
         # Simulation
         for _ in range(5):
             mujoco.mj_step(self.model, self.data)
-
-        if (not np.all(np.isfinite(self.data.qpos[:6])) or
-                not np.all(np.isfinite(self.data.qvel[:6])) or
-                not np.all(np.isfinite(self.data.ctrl[:6]))):
-            mujoco.mj_resetData(self.model, self.data)
-            mujoco.mj_forward(self.model, self.data)
-            return dm_env.truncation(reward=-10.0, observation=self._get_obs())
         
         # Nouvel état
         new_qpos = jnp.array(self.data.qpos[:6].copy())
@@ -167,7 +146,7 @@ class UR5eReachEnvDM(dm_env.Environment):
         ee_pos = self._get_end_effector_pos()
         distance = float(jnp.linalg.norm(ee_pos - self._state.target))
         terminated = distance < 0.05
-        truncated = new_time > 60.0  # 60s sim time ≈ 6000 steps
+        truncated = new_time > 10.0
         
         # Mettre à jour l'état JAX
         self._state = UR5eState(
@@ -233,32 +212,24 @@ class UR5eReachEnvDM(dm_env.Environment):
     def _compute_reward(self) -> float:
         """Calcul récompense"""
         ee_pos = self._get_end_effector_pos()
-        distance = float(np.linalg.norm(ee_pos - np.array(self._state.target)))
-        distance = float(np.nan_to_num(distance, nan=1.0, posinf=1.0, neginf=1.0))
-
-        # Base positive pour éviter des retours systématiquement négatifs
-        step_bonus = 0.25
-
-        # Récompense principale (proximité)
-        distance_reward = 1.0 - np.tanh(3.0 * distance)
-
-        # Progression locale
-        progress = float(self._state.last_distance - distance)
-        progress = float(np.nan_to_num(progress, nan=0.0, posinf=0.0, neginf=0.0))
-        progress = float(np.clip(progress, -1.0, 1.0))
-        progress_reward = 2.0 * progress
-
-        # Alignement vertical léger
-        z_penalty = -0.3 * abs(ee_pos[2] - float(self._state.target[2]))
-
+        distance = np.linalg.norm(ee_pos - np.array(self._state.target))
+        
+        # Récompense principale
+        main_reward = -distance
+        
+        # Bonus Z
+        z_reward = -2.0 * abs(ee_pos[2] - float(self._state.target[2]))
+        
+        # Bonus progression distance
+        progress_bonus = 0.5 if distance < self._state.last_distance else 0.0
+        
         # Pénalité douceur
         smoothness = -0.001 * float(np.mean(np.abs(self.data.ctrl[:6])))
-
-        # Bonus succès fort
-        success = 20.0 if distance < 0.05 else 0.0
-
-        reward = float(step_bonus + distance_reward + progress_reward + z_penalty + smoothness + success)
-        return float(np.nan_to_num(reward, nan=-1.0, posinf=5.0, neginf=-5.0))
+        
+        # Bonus succès
+        success = 10.0 if distance < 0.05 else 0.0
+        
+        return float(main_reward + z_reward + progress_bonus + smoothness + success)
     
     def _update_curriculum(self, state: UR5eState) -> UR5eState:
         """Mise à jour curriculum"""
@@ -273,20 +244,21 @@ class UR5eReachEnvDM(dm_env.Environment):
         return self._observation_spec
     
     def render(self, mode='human'):
-        """Rendu MuJoCo en viewer passif."""
-        if not self._viewer_enabled:
+        """Rendu MuJoCo"""
+        if mj_viewer is None:
+            if not self._viewer_warning_printed:
+                print("Viewer MuJoCo indisponible dans cette installation (mujoco.viewer).")
+                self._viewer_warning_printed = True
             return
 
-        if self._viewer is None:
-            self._viewer = mujoco.viewer.launch_passive(self.model, self.data)
-
+        if self._viewer is None and self._render_mode:
+            self._viewer = mj_viewer.launch_passive(self.model, self.data)
         if self._viewer and self._viewer.is_running():
             self._viewer.sync()
     
     def close(self):
         if self._viewer:
             self._viewer.close()
-            self._viewer = None
 
 
 @dataclasses.dataclass
@@ -311,11 +283,11 @@ class ReplayBuffer:
 
     def add(self, transition: Transition):
         i = self.index
-        self.obs[i] = np.nan_to_num(transition.obs, nan=0.0, posinf=1e3, neginf=-1e3)
-        self.actions[i] = np.nan_to_num(transition.action, nan=0.0, posinf=1.0, neginf=-1.0)
-        self.rewards[i] = float(np.nan_to_num(transition.reward, nan=0.0, posinf=10.0, neginf=-10.0))
-        self.next_obs[i] = np.nan_to_num(transition.next_obs, nan=0.0, posinf=1e3, neginf=-1e3)
-        self.dones[i] = float(np.nan_to_num(transition.done, nan=1.0, posinf=1.0, neginf=1.0))
+        self.obs[i] = transition.obs
+        self.actions[i] = transition.action
+        self.rewards[i] = transition.reward
+        self.next_obs[i] = transition.next_obs
+        self.dones[i] = transition.done
         self.index = (self.index + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
 
@@ -414,13 +386,10 @@ class JAXReachAgent:
         self._update_jit = jax.jit(self._update_step)
 
     def select_action(self, obs: np.ndarray, explore: bool = True) -> np.ndarray:
-        safe_obs = np.nan_to_num(np.asarray(obs, dtype=np.float32), nan=0.0, posinf=1e3, neginf=-1e3)
-        obs_j = jnp.asarray(safe_obs)
+        obs_j = jnp.asarray(obs)
         action = np.asarray(actor_forward(self.actor_params, obs_j), dtype=np.float32)
-        action = np.nan_to_num(action, nan=0.0, posinf=1.0, neginf=-1.0)
         if explore:
             action = action + self.np_rng.normal(0.0, self.noise_std, size=action.shape).astype(np.float32)
-        action = np.nan_to_num(action, nan=0.0, posinf=1.0, neginf=-1.0)
         return np.clip(action, -1.0, 1.0).astype(np.float32)
 
     def observe(self, obs, action, reward, next_obs, done):
@@ -443,14 +412,6 @@ class JAXReachAgent:
 
         batch = self.replay.sample(self.batch_size, self.np_rng)
         obs, actions, rewards, next_obs, dones = [jnp.asarray(x) for x in batch]
-        if not (
-            np.all(np.isfinite(np.asarray(obs)))
-            and np.all(np.isfinite(np.asarray(actions)))
-            and np.all(np.isfinite(np.asarray(rewards)))
-            and np.all(np.isfinite(np.asarray(next_obs)))
-            and np.all(np.isfinite(np.asarray(dones)))
-        ):
-            return {"critic_loss": 0.0, "actor_loss": 0.0}
 
         (
             self.actor_params,
@@ -496,11 +457,9 @@ class JAXReachAgent:
         next_actions = jax.vmap(lambda o: actor_forward(target_actor_params, o))(next_obs)
         target_q = jax.vmap(lambda o, a: critic_forward(target_critic_params, o, a))(next_obs, next_actions)
         y = rewards + gamma * (1.0 - dones) * target_q
-        y = jnp.nan_to_num(y, nan=0.0, posinf=100.0, neginf=-100.0)
 
         def critic_loss_fn(c_params):
             q = jax.vmap(lambda o, a: critic_forward(c_params, o, a))(obs, actions)
-            q = jnp.nan_to_num(q, nan=0.0, posinf=100.0, neginf=-100.0)
             return jnp.mean((q - y) ** 2)
 
         critic_loss, critic_grads = jax.value_and_grad(critic_loss_fn)(critic_params)
@@ -508,9 +467,7 @@ class JAXReachAgent:
 
         def actor_loss_fn(a_params):
             pred_actions = jax.vmap(lambda o: actor_forward(a_params, o))(obs)
-            pred_actions = jnp.nan_to_num(pred_actions, nan=0.0, posinf=1.0, neginf=-1.0)
             q_pred = jax.vmap(lambda o, a: critic_forward(critic_params, o, a))(obs, pred_actions)
-            q_pred = jnp.nan_to_num(q_pred, nan=0.0, posinf=100.0, neginf=-100.0)
             return -jnp.mean(q_pred)
 
         actor_loss, actor_grads = jax.value_and_grad(actor_loss_fn)(actor_params)
@@ -537,20 +494,21 @@ class JAXReachAgent:
         )
 
 
-def train_ur5e_acme():
-    """Entraînement avec agent JAX local (remplacement d'Acme)."""
+def train_ur5e_acme_safe(
+    render: bool = False,
+    num_episodes: int = 300,
+    max_steps_per_episode: int = 500,
+    step_heartbeat: int = 100,
+):
+    """Entraînement style Acme avec agent JAX local (sans dépendances Acme runtime)."""
 
-    environment = UR5eReachEnvDM(render_mode='human')
+    environment = UR5eReachEnvDM(render_mode='human' if render else None)
 
     obs_dim = int(environment.observation_spec().shape[0])
     act_dim = int(environment.action_spec().shape[0])
     agent = JAXReachAgent(obs_dim=obs_dim, action_dim=act_dim)
 
-    num_episodes = 100000
-    max_steps_per_episode = 500
-
     episode_returns = []
-    episode_success = []
 
     for episode in range(num_episodes):
         timestep = environment.reset()
@@ -573,16 +531,17 @@ def train_ur5e_acme():
 
             episode_return += reward
 
+            if step_heartbeat > 0 and (step + 1) % step_heartbeat == 0:
+                print(f"Episode {episode + 1}/{num_episodes} - step {step + 1}/{max_steps_per_episode}")
+
             if timestep.last():
                 break
 
         episode_returns.append(episode_return)
-        episode_success.append(1.0 if timestep.step_type == dm_env.StepType.LAST and (timestep.reward or 0.0) >= 20.0 else 0.0)
 
-        if episode % 10 == 0:
-            avg_return = np.mean(episode_returns[-10:])
-            success_rate = np.mean(episode_success[-10:]) * 100.0
-            print(f"Episode {episode}, Return moyen: {avg_return:.2f}, Succès(10): {success_rate:.1f}%")
+        avg_window = 10 if len(episode_returns) >= 10 else len(episode_returns)
+        avg_return = np.mean(episode_returns[-avg_window:])
+        print(f"Episode {episode + 1}/{num_episodes}, Return: {episode_return:.2f}, Moyenne({avg_window}): {avg_return:.2f}")
 
     environment.close()
     return agent, episode_returns
@@ -634,14 +593,14 @@ def compute_q_loss(params, obs_batch, action_batch, target_q):
 
 if __name__ == "__main__":
     print("="*60)
-    print("UR5e REACH AVEC JAX + MuJoCo (sans Acme)")
+    print("UR5e REACH - VERSION ACME-SAFE")
     print("="*60)
     print("Framework: Agent JAX local")
     print("Backend: JAX (compilation XLA)")
     print("Simulateur: MuJoCo")
     print("="*60)
     
-    trained_agent, returns = train_ur5e_acme()
+    trained_agent, returns = train_ur5e_acme_safe(render=False)
     plot_training_returns(returns)
     
     print("\nEntraînement terminé!")

@@ -1,0 +1,38 @@
+FROM python:3.10-bullseye
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libgl1 \
+    libglib2.0-0 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxrandr2 \
+    libxi6 \
+    libxcursor1 \
+    libxinerama1 \
+    libxxf86vm1 \
+    libglfw3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.acme.txt /tmp/requirements.acme.txt
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install -r /tmp/requirements.acme.txt
+
+COPY docker/entrypoint_acme.sh /entrypoint_acme.sh
+RUN chmod +x /entrypoint_acme.sh
+
+ENTRYPOINT ["/entrypoint_acme.sh"]
+CMD ["python", "simulation.py"]

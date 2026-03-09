@@ -1,0 +1,30 @@
+name: acmeUr5e
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+      - dm-acme==0.4.0
+      - dm-env==1.6
+      - mujoco==3.1.6
+      - jax==0.4.30
+      - jaxlib==0.4.30
+      - numpy==1.26.4
+      - ml-dtypes==0.3.2
+      - tensorflow==2.15.1
+      - tensorflow-cpu==2.15.1
+      - tensorflow-probability==0.23.0
+      - protobuf==4.25.8
+      - gym==0.26.2
+      - dm-reverb==0.14.0
+      - dm-launchpad==0.5.0
+      - dm-haiku==0.0.11
+      - chex==0.1.90
+      - flax==0.8.5
+      - optax==0.2.4
+      - orbax-checkpoint==0.6.4
+      - distrax==0.1.5
+      - rlax==0.1.7
+      - dm-sonnet==2.0.2
