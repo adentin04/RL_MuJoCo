@@ -61,9 +61,8 @@
 
   <worldbody>
     <light name="spotlight" mode="targetbodycom" target="wrist_2_link" pos="0 -1 2"/>
-    <body name="target_marker" pos="0.45 0 0.1">
-      <geom name="target_geom" type="sphere" size="0.025" rgba="1 0 0 0.8" contype="0" conaffinity="0"/>
-      <site name="target_site" pos="0 0 0" size="0.03" rgba="1 0 0 1"/>
+    <body name="target_marker" mocap="true" pos="0.26 -0.34 0.59">
+      <geom name="target_geom" type="sphere" size="0.05" rgba="1 0 0 0.8" contype="0" conaffinity="0"/>
     </body>
     <body name="base" quat="0 0 0 -1" childclass="ur5e">
       <inertial mass="4.0" pos="0 0 0" diaginertia="0.00443333156 0.00443333156 0.0072"/>
