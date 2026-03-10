@@ -1,6 +1,7 @@
 """UR5e Reach Environment avec agent JAX local (sans Acme)."""
 
 import dataclasses
+import os
 from typing import Optional, Dict, Any, Tuple
 
 import dm_env
@@ -10,11 +11,6 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 from dm_env import specs
-
-try:
-    import matplotlib.pyplot as plt
-except Exception:
-    plt = None
 
 @dataclasses.dataclass
 class UR5eState:
@@ -44,10 +40,32 @@ class UR5eReachEnvDM(dm_env.Environment):
         
         # Curriculum targets
         self.curriculum_targets = [
-            jnp.array([0.26, -0.34, 0.59]),
-            jnp.array([0.35, -0.25, 0.59]),
-            jnp.array([0.41, -0.14, 0.59]),
+            jnp.array([0.85, -0.34, 0.59]),
+            jnp.array([0.35, -0.35, 0.59]),
+            jnp.array([0.22, -0.14, 0.59]),
         ]
+
+        target_xyz_env = os.environ.get("UR5E_TARGET_XYZ", "").strip()
+        target_index_env = os.environ.get("UR5E_TARGET_INDEX", "0").strip()
+
+        selected_target = None
+        if target_xyz_env:
+            parts = [p.strip() for p in target_xyz_env.split(",")]
+            if len(parts) == 3:
+                try:
+                    selected_target = jnp.array([float(parts[0]), float(parts[1]), float(parts[2])], dtype=jnp.float32)
+                except ValueError:
+                    selected_target = None
+
+        if selected_target is None:
+            try:
+                target_index = int(target_index_env)
+            except ValueError:
+                target_index = 0
+            target_index = int(np.clip(target_index, 0, len(self.curriculum_targets) - 1))
+            selected_target = jnp.array(self.curriculum_targets[target_index], dtype=jnp.float32)
+
+        self.selected_target = selected_target
         
         # Spécifications dm_env (équivalent gym.space)
         self._action_spec = specs.BoundedArray(
@@ -82,15 +100,22 @@ class UR5eReachEnvDM(dm_env.Environment):
     def _initialize_state(self) -> UR5eState:
         """Crée l'état initial"""
         ee_pos = self._get_end_effector_pos()
-        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.curriculum_targets[0])))
+        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.selected_target)))
         return UR5eState(
             qpos=jnp.array(self.data.qpos[:6].copy()),
             qvel=jnp.array(self.data.qvel[:6].copy()),
-            target=self.curriculum_targets[0],
+            target=self.selected_target,
             time=0.0,
             last_distance=initial_distance,
             curriculum_stage=0
         )
+
+    def _update_target_marker(self, target: jnp.ndarray) -> None:
+        target_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'target_marker')
+        if target_body_id >= 0:
+            mocap_id = self.model.body_mocapid[target_body_id]
+            if mocap_id >= 0:
+                self.data.mocap_pos[mocap_id] = np.asarray(target, dtype=np.float64)
     
     def reset(self) -> dm_env.TimeStep:
         """Reset dm_env style"""
@@ -102,25 +127,30 @@ class UR5eReachEnvDM(dm_env.Environment):
         self.data.ctrl[:6] = initial_qpos
         
         # Mettre à jour la cible (sphère rouge)
-        target_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'target_marker')
-        if target_body_id >= 0:
-            mocap_id = self.model.body_mocapid[target_body_id]
-            if mocap_id >= 0:
-                self.data.mocap_pos[mocap_id] = self.curriculum_targets[0]
+        self._update_target_marker(self.selected_target)
         
         mujoco.mj_forward(self.model, self.data)
 
         ee_pos = self._get_end_effector_pos()
-        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.curriculum_targets[0])))
+        initial_distance = float(np.linalg.norm(ee_pos - np.array(self.selected_target)))
         
         # Mettre à jour l'état JAX
         self._state = UR5eState(
             qpos=jnp.array(initial_qpos),
             qvel=jnp.zeros(6),
-            target=self.curriculum_targets[0],
+            target=self.selected_target,
             time=0.0,
             last_distance=initial_distance,
             curriculum_stage=0
+        )
+
+        print(
+            "[ENV] reset target="
+            f"{np.asarray(self.selected_target, dtype=np.float32).round(3).tolist()} "
+            "| ee_start="
+            f"{np.asarray(ee_pos, dtype=np.float32).round(3).tolist()} "
+            f"| distance={initial_distance:.3f}",
+            flush=True,
         )
         
         # Premier timestep dm_env
@@ -588,9 +618,14 @@ def train_ur5e_acme():
     return agent, episode_returns
 
 
-def plot_training_returns(returns):
-    if plt is None:
-        print("matplotlib non disponible: graphique désactivé.")
+def plot_training_returns(returns, output_path: str = "training_returns.png"):
+    try:
+        import matplotlib
+        if not os.environ.get("DISPLAY"):
+            matplotlib.use("Agg", force=True)
+        import matplotlib.pyplot as plt
+    except Exception as exc:
+        print(f"matplotlib non disponible: graphique désactivé. Cause: {exc}")
         return
 
     x = np.arange(len(returns))
@@ -613,7 +648,15 @@ def plot_training_returns(returns):
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(output_path, dpi=150)
+
+    backend = str(getattr(plt, "get_backend", lambda: "")()).lower()
+    if "agg" in backend:
+        print(f"[PLOT] Environnement sans affichage. Graphique sauvegardé: {output_path}")
+    else:
+        plt.show()
+
+    plt.close()
 
 
 # ============================================================================
