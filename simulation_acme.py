@@ -7,17 +7,86 @@ import os
 import sys
 import threading
 import time
+from datetime import datetime
 from pathlib import Path
 from types import ModuleType
 from typing import List
 
 import numpy as np
 
-from simulation import UR5eReachEnvDM, plot_training_returns
+from simulation import UR5eReachEnvDM
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")  # évite OOM GPU sur RTX 2060 6GB
 os.environ.setdefault("JAX_COMPILATION_CACHE_DIR", "/tmp/jax_xla_cache")  # cache XLA → compile 1 seule fois
+
+
+def plot_training_returns(returns: List[float], output_path: str | None = None) -> None:
+    """Trace une courbe d'apprentissage style learning_curves et sauvegarde un PNG."""
+    try:
+        import matplotlib
+        if not os.environ.get("DISPLAY"):
+            matplotlib.use("Agg", force=True)
+        import matplotlib.pyplot as plt
+    except Exception as exc:
+        print(f"[PLOT] matplotlib non disponible: {exc}", flush=True)
+        return
+
+    y = np.asarray(returns, dtype=np.float32)
+    if y.size == 0:
+        print("[PLOT] Aucun return à tracer.", flush=True)
+        return
+
+    x = np.arange(y.size)
+    window = 20 if y.size >= 20 else max(3, y.size)
+    kernel = np.ones(window, dtype=np.float32) / float(window)
+    moving_avg = np.convolve(y, kernel, mode="valid")
+    moving_x = np.arange(window - 1, y.size)
+
+    running_best = np.maximum.accumulate(y)
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(x, y, color="steelblue", alpha=0.30, linewidth=0.9, label="Return par épisode")
+    ax.plot(moving_x, moving_avg, color="steelblue", linewidth=2.2, label=f"Moyenne mobile ({window} épisodes)")
+    ax.plot(x, running_best, color="seagreen", linestyle="--", linewidth=1.2, alpha=0.9, label="Meilleur score cumulé")
+
+    ax.set_title("Courbe d'apprentissage — UR5e Reach (Acme D4PG)", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Épisode", fontsize=12)
+    ax.set_ylabel("Return", fontsize=12)
+    ax.grid(True, alpha=0.30)
+    ax.legend(fontsize=10)
+
+    y_min = float(np.nanmin(y))
+    y_max = float(np.nanmax(y))
+    if np.isfinite(y_min) and np.isfinite(y_max) and y_max > y_min:
+        margin = 0.08 * (y_max - y_min)
+        ax.set_ylim(y_min - margin, y_max + margin)
+
+    fig.tight_layout()
+
+    output_dir = Path(__file__).resolve().parent / "learning_curves"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if output_path is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = str(output_dir / f"learning_curve_{timestamp}.png")
+
+    plt.savefig(output_path, dpi=140)
+
+    latest_path = output_dir / "learning_curve.png"
+    if str(latest_path) != output_path:
+        plt.savefig(str(latest_path), dpi=140)
+
+    backend = str(getattr(plt, "get_backend", lambda: "")()).lower()
+    if "agg" in backend:
+        print(f"[PLOT] Environnement sans affichage. Graphiques sauvegardés:", flush=True)
+        print(f"       - {output_path}", flush=True)
+        print(f"       - {latest_path}", flush=True)
+    else:
+        plt.show(block=False)
+        print(f"[PLOT] Graphiques sauvegardés: {output_path} | {latest_path}", flush=True)
+        plt.show()
+    plt.close()
 
 
 def _bootstrap_conda_shared_libs() -> None:
@@ -270,9 +339,9 @@ def build_acme_agent(environment: UR5eReachEnvDM, seed: int = 0):
 
 
 def train_ur5e_with_acme(
-    num_episodes: int=100,
+    num_episodes: int=4000,
     render: bool = True,
-    render_every_n_steps: int = 10,
+    render_every_n_steps: int = 1,
     max_episode_steps: int = 10000,
 ) -> List[float]:
     """Entraîne UR5e avec Acme (D4PG) sur l'environnement dm_env."""
@@ -287,10 +356,18 @@ def train_ur5e_with_acme(
         acme, agent = build_acme_agent(environment)
     except Exception as exc:
         environment.close()
-        raise RuntimeError(
+        message = (
             "Impossible d'initialiser Acme/JAX dans l'environnement courant "
             "(acmeUr5e). Vérifie acme, dm-env, jax, dm-haiku, reverb, tensorflow. "
             f"Cause: {type(exc).__name__}: {exc}"
+        )
+        if isinstance(exc, ValueError) and "numpy.dtype size changed" in str(exc):
+            message += (
+                "\n[FIX ABI NumPy] Dans l'env acmeUr5e: "
+                "python -m pip uninstall -y numpy && python -m pip install numpy==1.26.4"
+            )
+        raise RuntimeError(
+            message
         ) from exc
 
     loop = acme.EnvironmentLoop(environment, agent)
@@ -300,7 +377,10 @@ def train_ur5e_with_acme(
 
     def reset_with_counter():
             step_counter["count"] = 0
-            return original_reset()
+            timestep = original_reset()
+            if render:
+                environment.render()
+            return timestep
 
     def step_with_controls(action):
             timestep = original_step(action)
@@ -377,13 +457,22 @@ if __name__ == "__main__":
     print(f"Python: {sys.executable}")
     print("=" * 60)
 
-    returns = train_ur5e_with_acme(
-            num_episodes=10000,
+    returns: List[float] = []
+    try:
+        returns = train_ur5e_with_acme(
+            num_episodes=4000,
             render=True,
-            render_every_n_steps=10,
+            render_every_n_steps=1,
             max_episode_steps=100,
         )
-    plot_training_returns(returns)
+    except KeyboardInterrupt:
+        print("\n[INFO] Entraînement interrompu par l'utilisateur.")
+    finally:
+        if returns:
+            print("[PLOT] Affichage du graphique des returns...", flush=True)
+            plot_training_returns(returns)
 
-    print("\nEntraînement Acme terminé!")
-    print(f"Meilleur return: {np.nanmax(np.asarray(returns, dtype=np.float32)):.2f}")
+            print("\nEntraînement Acme terminé!")
+            print(f"Meilleur return: {np.nanmax(np.asarray(returns, dtype=np.float32)):.2f}")
+        else:
+            print("[PLOT] Aucun return disponible pour tracer un graphique.", flush=True)
