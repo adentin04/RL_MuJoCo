@@ -101,14 +101,7 @@ class UR5eReachEnvDM(dm_env.Environment):
         self.data.qpos[:6] = initial_qpos
         self.data.ctrl[:6] = initial_qpos
         
-        # Mettre à jour la cible (sphère rouge)
-        target_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'target_marker')
-        if target_body_id >= 0:
-            mocap_id = self.model.body_mocapid[target_body_id]
-            if mocap_id >= 0:
-                self.data.mocap_pos[mocap_id] = self.curriculum_targets[0]
-        
-        mujoco.mj_forward(self.model, self.data)
+   
 
         ee_pos = self._get_end_effector_pos()
         initial_distance = float(np.linalg.norm(ee_pos - np.array(self.curriculum_targets[0])))
@@ -224,12 +217,7 @@ class UR5eReachEnvDM(dm_env.Environment):
             return self.data.site_xpos[self.ee_site_id].copy()
         return self.data.geom_xpos[-1].copy()
     
-    def _get_end_effector_pos_jax(self) -> jnp.ndarray:
-        """Position effecteur en JAX"""
-        if self.ee_site_id is not None:
-            return jnp.array(self.data.site_xpos[self.ee_site_id])
-        return jnp.array(self.data.geom_xpos[-1])
-    
+
     def _compute_reward(self) -> float:
         """Calcul récompense"""
         ee_pos = self._get_end_effector_pos()
