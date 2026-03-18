@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Notes/Reinforcement Learning.md",
+                "file": "Notes/ROS.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Reinforcement Learning"
+              "title": "ROS"
             }
           }
         ]
@@ -185,14 +185,28 @@
   },
   "active": "04c9eed1a9d171bb",
   "lastOpenFiles": [
+    "Notes/Reinforcement Learning.md",
+    "Notes/ROS.md",
+    "Notes/Pipeline.md",
+    "Gym/learning_curves/learning_curve_20260305_131600.png",
+    "Gym/learning_curves/learning_curve_20260305_113642.png",
+    "__pycache__/env_ur5e.cpython-313.pyc",
+    "__pycache__/env_ur5e.cpython-310.pyc",
+    "learning_curves/learning_curve_20260312_104417.png",
+    "learning_curves/learning_curve_20260312_093822.png",
+    "training_returns.png",
+    "test_returns_plot.png",
+    "learning_curves/learning_curve_20260310_130525.png",
+    "learning_curves/learning_curve_20260310_143210.png",
+    "learning_curves/learning_curve_20260310_110932.png",
+    "learning_curves/learning_curve_20260310_122015.png",
+    "learning_curves",
     "train_acme.py",
     "env_ur5e.py",
     "Notes/Universal robots.md",
     "Notes/Vidéo UR15.md",
     "Notes/Stack recherche deepmind.md",
     "Notes/Ressources.md",
-    "Notes/Reinforcement Learning.md",
-    "Notes/Pipeline.md",
     "Notes/MDP.md",
     "Notes/Implémentation Gymnasium JaxCode.md",
     "Notes/Commands & libreries.md",
@@ -205,25 +219,11 @@
     "requirements.txt",
     "requirements.acme.txt",
     "environment.acme.yml",
-    "docker/entrypoint_acme.sh",
-    "docker",
-    "docker-compose.acme.yml",
-    "__pycache__/simulation_acme_safe.cpython-39.pyc",
-    "Figure_1.png",
     "DOCKER_ACME.md",
     "Notes/Vocabulary.md",
     "Etapes/Pour apprendre RL.md",
-    "Gym/learning_curves/learning_curve_20260304_151025.png",
-    "acme/Figure_1.png",
-    "acme/10000_G9_lr3_05_03.png",
-    "acme/10000_step_05_03_26.png",
-    "acme/10000_G99_lr5_alpha4_05_03.png",
-    "Gym/learning_curves/learning_curve.png",
-    "Gym/learning_curves/learning_curve_20260305_131600.png",
     "research/Super_Mario_A3C_Fonctionnement.md",
-    "Gym/learning_curves/learning_curve_20260305_113642.png",
     "Gym/Train.md",
-    "Pasted image 20260304144222.png",
     "Journal_de_bord.md",
     "deepseek_python_20260305_471174.md"
   ]

@@ -18,14 +18,14 @@ except ImportError:
 
 
 @dataclasses.dataclass
-class UR5eState:
+class UR5eState:   #variabileistato del braccio robotico 
     qpos: np.ndarray   # positions articulaires (6,)
     qvel: np.ndarray   # vitesses articulaires  (6,)
     target: np.ndarray # position cible 3D      (3,)
     time: float
 
 
-class UR5eReachEnvDM(dm_env.Environment):
+class UR5eReachEnvDM(dm_env.Environment): #classe stato del braccio robotico
     """Environnement dm_env pour UR5e reach task.
 
     Observation : qpos(6) + qvel(6) + vecteur_relatif(3) = 15
@@ -39,25 +39,25 @@ class UR5eReachEnvDM(dm_env.Environment):
     SUCCESS_THRESHOLD = 0.05  # mètres
 
     def __init__(
-        self,
-        xml_path: str = "universal_robots_ur5e/ur5e.xml",
-        render_mode: Optional[str] = None,
+        self, #this
+        xml_path: str = "universal_robots_ur5e/ur5e.xml", # il robot
+        render_mode: Optional[str] = None, #per il viewer
     ):
-        self.model = mujoco.MjModel.from_xml_path(xml_path)
-        self.data = mujoco.MjData(self.model)
+        self.model = mujoco.MjModel.from_xml_path(xml_path) #variabile per il modello 
+        self.data = mujoco.MjData(self.model) #i dati importanti sul robot
 
-        site_names = [self.model.site(i).name for i in range(self.model.nsite)]
-        self._ee_site_id = (
+        site_names = [self.model.site(i).name for i in range(self.model.nsite)] #?
+        self._ee_site_id = ( #?
             self.model.site("attachment_site").id
             if "attachment_site" in site_names
             else None
         )
 
-        self._action_spec = specs.BoundedArray(
+        self._action_spec = specs.BoundedArray( #?
             shape=(6,), dtype=np.float32,
             minimum=-1.0, maximum=1.0, name="action",
         )
-        self._observation_spec = specs.BoundedArray(
+        self._observation_spec = specs.BoundedArray( #?
             shape=(15,), dtype=np.float32,
             minimum=-np.inf, maximum=np.inf, name="observation",
         )
@@ -71,7 +71,7 @@ class UR5eReachEnvDM(dm_env.Environment):
     # ------------------------------------------------------------------
 
     def reset(self) -> dm_env.TimeStep:
-        mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_resetData(self.model, self.data)# reset allo stato iniziale 
         qpos = self.HOME + np.random.uniform(-0.1, 0.1, 6).astype(np.float32)
         self.data.qpos[:6] = qpos
         self.data.ctrl[:6] = qpos
@@ -87,7 +87,7 @@ class UR5eReachEnvDM(dm_env.Environment):
         self.data.ctrl[:6] = ctrl
 
         for _ in range(5):
-            mujoco.mj_step(self.model, self.data)
+            mujoco.mj_step(self.model, self.data) #?
 
         if not (
             np.all(np.isfinite(self.data.qpos[:6]))
@@ -95,7 +95,7 @@ class UR5eReachEnvDM(dm_env.Environment):
         ):
             mujoco.mj_resetData(self.model, self.data)
             mujoco.mj_forward(self.model, self.data)
-            return dm_env.truncation(reward=-10.0, observation=self._get_obs())
+            return dm_env.truncation(reward=-30.0, observation=self._get_obs())
 
         self._state = UR5eState(
             qpos=self.data.qpos[:6].copy().astype(np.float32),
@@ -166,7 +166,7 @@ class UR5eReachEnvDM(dm_env.Environment):
 # ------------------------------------------------------------------
 # Utilitaire visualisation
 # ------------------------------------------------------------------
-
+print("dm_env Trunc", dm_env.truncation)
 def plot_training_returns(returns: list[float]) -> None:
     if plt is None:
         print("matplotlib non disponible.")
@@ -183,7 +183,9 @@ def plot_training_returns(returns: list[float]) -> None:
     plt.xlabel("Épisode")
     plt.ylabel("Return")
     plt.title("Progression entraînement UR5e")
+
     plt.legend()
     plt.grid(alpha=0.3)
+    
     plt.tight_layout()
     plt.show()

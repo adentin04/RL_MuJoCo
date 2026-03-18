@@ -1,5 +1,5 @@
 """Entraînement UR5e avec Acme D4PG."""
-
+#Provare a cambiare il codice con SAC
 from __future__ import annotations
 
 import sys
@@ -55,7 +55,7 @@ def _make_networks(environment_spec):
     )
 
 
-def train(num_episodes: int = 500, render: bool = False, seed: int = 0) -> list[float]:
+def train(num_episodes: int = 10000, render: bool = False, seed: int = 0) -> list[float]:
     import acme
     from acme import specs
     from acme.agents.jax.d4pg import builder as d4pg_builder
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     print(f"Python : {sys.executable}")
     print(f"JAX backend : {jax.default_backend()}  devices : {jax.devices()}\n")
 
-    returns = train(num_episodes=500, render=True)
+    returns = train(num_episodes=10000, render=True)
     plot_training_returns(returns)
 
     print(f"\nMeilleur return : {np.nanmax(returns):.2f}")
