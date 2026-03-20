@@ -206,9 +206,7 @@ def _make_networks(environment_spec):
     )
 
 
-<<<<<<< HEAD
-def train(num_episodes: int = 10000, render: bool = False, seed: int = 0) -> list[float]:
-=======
+
 def train(
     num_episodes: int =5000,
     render: bool = False,
@@ -225,7 +223,7 @@ def train(
     _install_jax_compat_shims()
     _install_reverb_compat_shim()
 
->>>>>>> 617ff733cfc30768a8fd143622f20656fdcd3a5e
+
     import acme
     from acme import specs
     from acme.agents.jax.d4pg import builder as d4pg_builder

@@ -44,14 +44,9 @@ class UR5eReachEnvDM(dm_env.Environment): #classe stato del braccio robotico
         xml_path: str = "universal_robots_ur5e/ur5e.xml", # il robot
         render_mode: Optional[str] = None, #per il viewer
     ):
-<<<<<<< HEAD
-        self.model = mujoco.MjModel.from_xml_path(xml_path) #variabile per il modello 
-        self.data = mujoco.MjData(self.model) #i dati importanti sul robot
-=======
         self._log(f"init start: xml_path={xml_path}, render_mode={render_mode}")
         self.model = mujoco.MjModel.from_xml_path(xml_path)
         self.data = mujoco.MjData(self.model)
->>>>>>> 617ff733cfc30768a8fd143622f20656fdcd3a5e
 
         site_names = [self.model.site(i).name for i in range(self.model.nsite)] #?
         self._ee_site_id = ( #?
@@ -92,15 +87,11 @@ class UR5eReachEnvDM(dm_env.Environment): #classe stato del braccio robotico
     # ------------------------------------------------------------------
 
     def reset(self) -> dm_env.TimeStep:
-<<<<<<< HEAD
-        mujoco.mj_resetData(self.model, self.data)# reset allo stato iniziale 
-=======
         self._episode_index += 1
         self._step_in_episode = 0
         self._last_episode_return = 0.0
         self._log(f"reset start: episode={self._episode_index}")
         mujoco.mj_resetData(self.model, self.data)
->>>>>>> 617ff733cfc30768a8fd143622f20656fdcd3a5e
         qpos = self.HOME + np.random.uniform(-0.1, 0.1, 6).astype(np.float32)
         self.data.qpos[:6] = qpos
         self.data.ctrl[:6] = qpos
